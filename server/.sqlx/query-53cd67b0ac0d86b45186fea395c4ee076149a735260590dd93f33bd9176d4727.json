@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id AS uuid, title, content, author_id, created_at, updated_at\n            FROM posts\n            ORDER BY created_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "author_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "53cd67b0ac0d86b45186fea395c4ee076149a735260590dd93f33bd9176d4727"
+}

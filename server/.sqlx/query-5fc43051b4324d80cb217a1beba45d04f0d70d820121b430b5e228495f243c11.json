@@ -1,0 +1,55 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE posts\n            SET title = $1, content = $2, updated_at = $3\n            WHERE id = $4\n            RETURNING id AS uuid, title, content, author_id, created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "author_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Text",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5fc43051b4324d80cb217a1beba45d04f0d70d820121b430b5e228495f243c11"
+}

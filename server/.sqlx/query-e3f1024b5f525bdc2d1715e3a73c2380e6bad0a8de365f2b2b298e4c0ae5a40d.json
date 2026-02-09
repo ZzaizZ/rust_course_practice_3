@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, username, email, password_hash, created_at\n            FROM users\n            WHERE username = $1 OR email = $1;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "password_hash",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e3f1024b5f525bdc2d1715e3a73c2380e6bad0a8de365f2b2b298e4c0ae5a40d"
+}

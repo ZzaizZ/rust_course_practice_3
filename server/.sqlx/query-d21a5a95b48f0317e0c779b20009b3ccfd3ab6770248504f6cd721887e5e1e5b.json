@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO posts (id, title, content, author_id, created_at, updated_at)\n            VALUES ($1, $2, $3, $4, $5, $5)\n            RETURNING id AS uuid, title, content, author_id, created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "content",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "author_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Text",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d21a5a95b48f0317e0c779b20009b3ccfd3ab6770248504f6cd721887e5e1e5b"
+}
