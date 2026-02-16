@@ -4,8 +4,8 @@ use api::blog_server::Blog;
 use api::{
     CreatePostRequest, DeletePostRequest, DeletePostResponse, GetPostRequest, JwtContainer,
     ListPostsRequest, ListPostsResponse, LoginRequest, LoginResponse, Post as ProtoPost,
-    PostResponse, RegisterRequest, RegisterResponse, Response as ProtoResponse,
-    Status as ProtoStatus, UpdatePostRequest,
+    PostResponse, RefreshTokenRequest, RefreshTokenResponse, RegisterRequest, RegisterResponse,
+    Response as ProtoResponse, Status as ProtoStatus, UpdatePostRequest,
 };
 use prost_types::Timestamp;
 use tonic::{Request, Response, Status};
@@ -143,6 +143,46 @@ impl<Repo: UserRepository + Send + Sync + 'static> Blog for BlogServiceImpl<Repo
             Err(e) => {
                 warn!("Login failed: {}", e);
                 Ok(Response::new(LoginResponse {
+                    status: Some(Self::map_domain_error(e)),
+                    token: None,
+                }))
+            }
+        }
+    }
+
+    #[instrument(skip(self, request))]
+    async fn refresh_token(
+        &self,
+        request: Request<RefreshTokenRequest>,
+    ) -> Result<Response<RefreshTokenResponse>, Status> {
+        let req = request.into_inner();
+        debug!("Refresh token request received");
+
+        match self.auth_app.refresh_token(req.refresh_token).await {
+            Ok(token_dto) => {
+                info!("Token refreshed successfully");
+
+                let expires_at =
+                    chrono::Utc::now() + chrono::Duration::seconds(token_dto.expires_in);
+
+                Ok(Response::new(RefreshTokenResponse {
+                    status: Some(ProtoResponse {
+                        code: ProtoStatus::Ok as i32,
+                        details: Some("Token refreshed successfully".to_string()),
+                    }),
+                    token: Some(JwtContainer {
+                        access_token: token_dto.access_token,
+                        refresh_token: token_dto.refresh_token,
+                        expires_in: Some(Timestamp {
+                            seconds: expires_at.timestamp(),
+                            nanos: expires_at.timestamp_subsec_nanos() as i32,
+                        }),
+                    }),
+                }))
+            }
+            Err(e) => {
+                warn!("Token refresh failed: {}", e);
+                Ok(Response::new(RefreshTokenResponse {
                     status: Some(Self::map_domain_error(e)),
                     token: None,
                 }))

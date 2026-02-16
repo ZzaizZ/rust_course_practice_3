@@ -1,8 +1,12 @@
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, Responder, delete, get, post, put, web};
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::{info, warn};
 use uuid::Uuid;
+
+use api::rest::{
+    CreatePostRequest, LoginRequest, PostResponse, RefreshTokenRequest, RegisterRequest,
+    TokenResponse, UpdatePostRequest,
+};
 
 use crate::application::auth::AuthApplication;
 use crate::application::dto::auth::{LoginDto, RegisterDto, TokenDto};
@@ -18,32 +22,6 @@ pub struct AppState {
     pub post_app: Arc<PostApplication<PgUserRepository>>,
 }
 
-// Request/Response типы для JSON сериализации
-#[derive(Debug, Deserialize)]
-struct RegisterRequest {
-    username: String,
-    password: String,
-    email: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct LoginRequest {
-    username: String,
-    password: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct RefreshTokenRequest {
-    refresh_token: String,
-}
-
-#[derive(Debug, Serialize)]
-struct TokenResponse {
-    access_token: String,
-    refresh_token: String,
-    expires_in: i64,
-}
-
 impl From<TokenDto> for TokenResponse {
     fn from(dto: TokenDto) -> Self {
         Self {
@@ -52,28 +30,6 @@ impl From<TokenDto> for TokenResponse {
             expires_in: dto.expires_in,
         }
     }
-}
-
-#[derive(Debug, Deserialize)]
-struct CreatePostRequest {
-    title: String,
-    content: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct UpdatePostRequest {
-    title: String,
-    content: String,
-}
-
-#[derive(Debug, Serialize)]
-struct PostResponse {
-    uuid: String,
-    title: String,
-    content: String,
-    author_id: String,
-    created_at: String,
-    updated_at: String,
 }
 
 impl From<PostDto> for PostResponse {

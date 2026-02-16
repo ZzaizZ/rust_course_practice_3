@@ -11,6 +11,8 @@ service Blog {
 
     rpc Login(LoginRequest) returns (LoginResponse);
 
+    rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+
     // CRUD для блога     
     rpc CreatePost(CreatePostRequest) returns (PostResponse);
 
@@ -39,6 +41,15 @@ message LoginRequest {
 }
 
 message LoginResponse {
+    Response status = 1;
+    optional JWTContainer token = 2;
+}
+
+message RefreshTokenRequest {
+    string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
     Response status = 1;
     optional JWTContainer token = 2;
 }
