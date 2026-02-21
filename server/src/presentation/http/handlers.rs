@@ -1,4 +1,5 @@
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, Responder, delete, get, post, put, web};
+use serde::Deserialize;
 use std::sync::Arc;
 use tracing::{info, warn};
 use uuid::Uuid;
@@ -148,11 +149,26 @@ pub async fn create_post(
     Ok(HttpResponse::Created().json(response))
 }
 
+/// Запрос на получение списка постов с пагинацией.
+#[derive(Debug, Deserialize)]
+pub struct PaginationQuery {
+    /// Количество постов на странице
+    pub page_size: u32,
+    /// Номер страницы (начиная с 0)
+    pub page: u32,
+}
+
 #[get("/api/v1/posts")]
-pub async fn list_posts(state: web::Data<AppState>) -> Result<impl Responder, ApiError> {
+pub async fn list_posts(
+    state: web::Data<AppState>,
+    query: web::Query<PaginationQuery>,
+) -> Result<impl Responder, ApiError> {
     info!("Received request to list all posts");
 
-    let posts = state.post_app.get_all_posts().await?;
+    let posts = state
+        .post_app
+        .get_posts(query.page, query.page_size)
+        .await?;
     let response: Vec<PostResponse> = posts.into_iter().map(PostResponse::from).collect();
 
     info!("Returning {} posts", response.len());

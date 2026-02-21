@@ -1,13 +1,18 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
+use tokio::sync::mpsc;
 use uuid::Uuid;
 
 use crate::{
-    blog_client::BlogClient, error::ClientError, interceptor::decode_token_without_validation,
-    token_manager::TokenManager, types,
+    blog_client::BlogClient,
+    error::ClientError,
+    interceptor::decode_token_without_validation,
+    token_manager::{TokenManager, TokenUpdateEvent},
+    types,
 };
 
+#[derive(Clone)]
 pub struct HttpClient {
     client: reqwest::Client,
     base_url: String,
@@ -29,11 +34,36 @@ impl HttpClient {
         })
     }
 
+    /// Создает HttpClient с поддержкой уведомлений об обновлении токена
+    pub async fn new_with_token_notifier(
+        url: String,
+        token_sender: mpsc::UnboundedSender<TokenUpdateEvent>,
+    ) -> Result<Self, ClientError> {
+        let client = reqwest::Client::builder()
+            .build()
+            .map_err(|e| ClientError::TransportError(e.to_string()))?;
+
+        let base_url = url.trim_end_matches('/').to_string();
+
+        Ok(Self {
+            client,
+            base_url,
+            token_manager: TokenManager::new_with_notifier(300, token_sender),
+        })
+    }
+
     pub async fn set_token(&self, token: String) {
+        // Сохраняем существующий refresh_token, если он есть
+        let existing_refresh_token = self
+            .token_manager
+            .get_refresh_token()
+            .await
+            .unwrap_or_default();
+
         self.token_manager
             .set_auth_data(types::AuthData {
                 access_token: token.clone(),
-                refresh_token: String::new(),
+                refresh_token: existing_refresh_token,
             })
             .await;
     }
@@ -64,11 +94,13 @@ impl HttpClient {
         base_url: String,
         refresh_token: types::Token,
     ) -> types::ClientResult<types::AuthData> {
-        let url = format!("{}/auth/refresh", base_url);
+        let url = format!("{}/api/v1/auth/refresh", base_url);
 
         let request_body = api::rest::RefreshTokenRequest {
             refresh_token: refresh_token.clone(),
         };
+
+        dbg!("Refreshing token with refresh_token: {}", refresh_token);
 
         let response = client
             .post(&url)
@@ -142,7 +174,8 @@ impl HttpClient {
     }
 }
 
-#[async_trait]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl BlogClient for HttpClient {
     async fn login(&self, username: &str, password: &str) -> types::ClientResult<Uuid> {
         let url = format!("{}/api/v1/auth/login", self.base_url);
@@ -223,6 +256,15 @@ impl BlogClient for HttpClient {
 
     async fn get_token(&self) -> types::ClientResult<Option<String>> {
         Ok(self.token_manager.get_access_token().await)
+    }
+
+    async fn setup_auth_data(&self, auth_data: &types::AuthData) -> types::ClientResult<()> {
+        self.token_manager.set_auth_data(auth_data.clone()).await;
+        Ok(())
+    }
+
+    async fn get_auth_data(&self) -> types::ClientResult<Option<types::AuthData>> {
+        Ok(self.token_manager.get_auth_data().await)
     }
 
     async fn create_post(&self, title: &str, content: &str) -> types::ClientResult<Uuid> {
@@ -340,10 +382,11 @@ impl BlogClient for HttpClient {
         Ok(())
     }
 
-    async fn list_posts(&self, page_size: u8, page: u32) -> types::ClientResult<Vec<types::Post>> {
+    async fn list_posts(&self, page_size: u32, page: u32) -> types::ClientResult<Vec<types::Post>> {
         // Проверяем и обновляем токен при необходимости
         self.ensure_valid_token().await?;
 
+        dbg!(page_size, page);
         let url = format!(
             "{}/api/v1/posts?page_size={}&page={}",
             self.base_url, page_size, page

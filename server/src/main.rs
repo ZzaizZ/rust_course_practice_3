@@ -4,6 +4,7 @@ use actix_cors::Cors;
 use actix_web::{App, HttpServer, web};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use api::blog_server::BlogServer;
+use clap::Parser;
 use server::{
     application::{auth::AuthApplication, post::PostApplication},
     data::pgrepo::PgUserRepository,
@@ -19,9 +20,20 @@ use server::{
 use tonic::transport::Server;
 use tracing::{error, info};
 
+/// Blog server with HTTP and gRPC APIs
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Path to the configuration file
+    #[arg(short, long, default_value = "config.yaml")]
+    config: String,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let cfg = Config::from_file("config.yml").expect("Failed to load configuration");
+    let args = Args::parse();
+
+    let cfg = Config::from_file(&args.config).expect("Failed to load configuration");
 
     // Инициализация tracing
     tracing_subscriber::fmt()

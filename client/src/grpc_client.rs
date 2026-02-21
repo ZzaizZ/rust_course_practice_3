@@ -26,10 +26,17 @@ impl GrpcClient {
     }
 
     pub async fn set_token(&self, token: &str) {
+        // Сохраняем существующий refresh_token, если он есть
+        let existing_refresh_token = self
+            .token_manager
+            .get_refresh_token()
+            .await
+            .unwrap_or_default();
+
         self.token_manager
             .set_auth_data(types::AuthData {
                 access_token: token.to_string(),
-                refresh_token: String::new(),
+                refresh_token: existing_refresh_token,
             })
             .await;
     }
@@ -136,7 +143,8 @@ fn check_response(response: Option<api::Response>) -> Result<(), ClientError> {
     }
 }
 
-#[async_trait]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl BlogClient for GrpcClient {
     async fn login(&self, username: &str, password: &str) -> types::ClientResult<Uuid> {
         let request = self.create_request_without_token(api::LoginRequest {
@@ -196,6 +204,15 @@ impl BlogClient for GrpcClient {
 
     async fn get_token(&self) -> types::ClientResult<Option<String>> {
         Ok(self.get_token().await)
+    }
+
+    async fn setup_auth_data(&self, auth_data: &types::AuthData) -> types::ClientResult<()> {
+        self.token_manager.set_auth_data(auth_data.clone()).await;
+        Ok(())
+    }
+
+    async fn get_auth_data(&self) -> types::ClientResult<Option<types::AuthData>> {
+        Ok(self.token_manager.get_auth_data().await)
     }
 
     async fn create_post(&self, title: &str, content: &str) -> types::ClientResult<Uuid> {
@@ -283,14 +300,14 @@ impl BlogClient for GrpcClient {
         check_response(response.status)
     }
 
-    async fn list_posts(&self, page_size: u8, page: u32) -> types::ClientResult<Vec<types::Post>> {
+    async fn list_posts(&self, page_size: u32, page: u32) -> types::ClientResult<Vec<types::Post>> {
         // Проверяем и обновляем токен при необходимости
         self.ensure_valid_token().await?;
 
         let request = self
             .create_request(api::ListPostsRequest {
-                page_count: page as i32,
-                page_size: page_size as i32,
+                page_count: page,
+                page_size,
             })
             .await?;
 

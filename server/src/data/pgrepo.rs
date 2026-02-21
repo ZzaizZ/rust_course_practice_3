@@ -122,7 +122,7 @@ impl UserRepository for PgUserRepository {
     }
 
     #[instrument(skip(self))]
-    async fn get_posts(&self) -> DomainResult<Vec<Post>> {
+    async fn get_posts(&self, page: u32, page_size: u32) -> DomainResult<Vec<Post>> {
         debug!("Fetching all posts from database");
 
         let posts = sqlx::query_as!(
@@ -131,7 +131,10 @@ impl UserRepository for PgUserRepository {
             SELECT id AS uuid, title, content, author_id, created_at, updated_at
             FROM posts
             ORDER BY created_at DESC
-            "#
+            LIMIT $1 OFFSET $2
+            "#,
+            page_size as i64,
+            (page * page_size) as i64
         )
         .fetch_all(&self.pool)
         .await

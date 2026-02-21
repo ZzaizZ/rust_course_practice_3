@@ -1,0 +1,25 @@
+[application]
+
+# Environment variables that will be set at compile time
+[application.env]
+BACKEND_URL = "http://localhost:8080"
+
+[web.app]
+
+# HTML title tag content
+title = "wasm"
+
+# include `assets` in web platform
+[web.resource]
+
+# Additional CSS style files
+style = []
+
+# Additional JavaScript files
+script = []
+
+[web.resource.dev]
+
+# Javascript code file
+# serve: [dev-server] only
+script = []

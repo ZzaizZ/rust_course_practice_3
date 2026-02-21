@@ -3,7 +3,7 @@ use crate::domain::entities::errors::DomainResult;
 use crate::domain::entities::post::Post;
 use crate::domain::repositories::repo::UserRepository;
 use std::sync::Arc;
-use tracing::{info, debug, instrument};
+use tracing::{debug, info, instrument};
 use uuid::Uuid;
 
 pub struct PostApplication<Repo: UserRepository> {
@@ -16,9 +16,9 @@ impl<Repo: UserRepository> PostApplication<Repo> {
     }
 
     #[instrument(skip(self))]
-    pub async fn get_all_posts(&self) -> DomainResult<Vec<PostDto>> {
+    pub async fn get_posts(&self, page: u32, page_size: u32) -> DomainResult<Vec<PostDto>> {
         debug!("Fetching all posts");
-        let posts = self.user_repository.get_posts().await?;
+        let posts = self.user_repository.get_posts(page, page_size).await?;
         info!("Retrieved {} posts", posts.len());
         Ok(posts.into_iter().map(PostDto::from_entity).collect())
     }
@@ -34,7 +34,7 @@ impl<Repo: UserRepository> PostApplication<Repo> {
     #[instrument(skip(self, dto), fields(title = %dto.title, author_id = %dto.author_id))]
     pub async fn create_post(&self, dto: CreatePostDto) -> DomainResult<PostDto> {
         debug!("Creating new post");
-        
+
         let now = chrono::Utc::now();
         let post = Post {
             uuid: Uuid::now_v7(),
@@ -53,7 +53,7 @@ impl<Repo: UserRepository> PostApplication<Repo> {
     #[instrument(skip(self, dto), fields(post_id = %dto.uuid, title = %dto.title))]
     pub async fn update_post(&self, dto: UpdatePostDto) -> DomainResult<PostDto> {
         debug!("Updating post");
-        
+
         // Проверяем, существует ли пост
         let existing_post = self.user_repository.get_post_by_id(dto.uuid).await?;
 

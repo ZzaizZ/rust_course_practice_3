@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id AS uuid, title, content, author_id, created_at, updated_at\n            FROM posts\n            ORDER BY created_at DESC\n            ",
+  "query": "\n            SELECT id AS uuid, title, content, author_id, created_at, updated_at\n            FROM posts\n            ORDER BY created_at DESC\n            LIMIT $1 OFFSET $2\n            ",
   "describe": {
     "columns": [
       {
@@ -35,7 +35,10 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
     },
     "nullable": [
       false,
@@ -46,5 +49,5 @@
       false
     ]
   },
-  "hash": "53cd67b0ac0d86b45186fea395c4ee076149a735260590dd93f33bd9176d4727"
+  "hash": "84e38e201a8e1a2a00d6950d5ed201623222abbb05dd62fc0e92092ca971e8a1"
 }

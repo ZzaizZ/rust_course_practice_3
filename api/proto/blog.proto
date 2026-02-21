@@ -87,8 +87,8 @@ message DeletePostResponse {
 }
 
 message ListPostsRequest {
-    int32 page_count = 1;
-    int32 page_size = 2;
+    uint32 page_count = 1;
+    uint32 page_size = 2;
 }
 
 message ListPostsResponse {

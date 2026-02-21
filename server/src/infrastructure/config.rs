@@ -1,23 +1,58 @@
 use serde::Deserialize;
 use serde_yml;
 
+/// Конфигурация сервера.
+///
+/// Содержит все настройки, необходимые для запуска и работы сервера.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
+    /// Строка подключения к PostgreSQL БД
     pub db_connection_string: String,
+    /// Секретный ключ для подписи JWT токенов
     pub jwt_secret: String,
+    /// Время жизни JWT access токена в секундах
     pub jwt_expiration_seconds: i64,
+    /// Порт HTTP сервера
     pub server_port: u16,
+    /// Порт gRPC сервера
     pub grpc_port: u16,
+    /// Разрешённый CORS origin
     pub cors_origin: String,
+    /// Уровень логирования (trace, debug, info, warn, error)
     pub log_level: String,
 }
 
 impl Config {
+    /// Загружает конфигурацию из YAML файла.
+    ///
+    /// # Аргументы
+    ///
+    /// * `path` - Путь к файлу конфигурации
+    ///
+    /// # Ошибки
+    ///
+    /// Возвращает ошибку если файл не найден или содержит невалидный YAML
     pub fn from_file(path: &str) -> anyhow::Result<Self> {
         let config_str = std::fs::read_to_string(path)?;
         let config: Config = serde_yml::from_str(&config_str)?;
         Ok(config)
     }
+
+    /// Загружает конфигурацию из переменных окружения.
+    ///
+    /// # Переменные окружения
+    ///
+    /// - `DB_CONNECTION_STRING` - строка подключения к БД (обязательна)
+    /// - `JWT_SECRET` - секрет для JWT (обязательна)
+    /// - `JWT_EXPIRATION_SECONDS` - время жизни токена (обязательна)
+    /// - `SERVER_PORT` - порт HTTP сервера (обязательна)
+    /// - `GRPC_PORT` - порт gRPC сервера (по умолчанию: 50051)
+    /// - `CORS_ORIGIN` - разрешённый origin (обязательна)
+    /// - `LOG_LEVEL` - уровень логов (по умолчанию: info)
+    ///
+    /// # Ошибки
+    ///
+    /// Паникует если обязательные переменные не установлены
     pub fn from_env() -> anyhow::Result<Self> {
         let db_connection_string =
             std::env::var("DB_CONNECTION_STRING").expect("DB_CONNECTION_STRING must be set");

@@ -389,11 +389,10 @@ impl<Repo: UserRepository + Send + Sync + 'static> Blog for BlogServiceImpl<Repo
         &self,
         request: Request<ListPostsRequest>,
     ) -> Result<Response<ListPostsResponse>, Status> {
-        // ListPosts - публичный метод, не требует аутентификации
-        let _req = request.into_inner();
+        let req = request.into_inner();
         debug!("List posts request received");
 
-        match self.post_app.get_all_posts().await {
+        match self.post_app.get_posts(req.page_count, req.page_size).await {
             Ok(posts) => {
                 info!("Retrieved {} posts", posts.len());
                 let proto_posts = posts
