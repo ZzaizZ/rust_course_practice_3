@@ -317,7 +317,10 @@ impl<Repo: UserRepository + Send + Sync + 'static> Blog for BlogServiceImpl<Repo
             content: post.data,
         };
 
-        match self.post_app.update_post(dto).await {
+        let user_id = Uuid::parse_str(&claims.sub)
+            .map_err(|_| Status::internal("Invalid user ID in token"))?;
+
+        match self.post_app.update_post(dto, user_id).await {
             Ok(post_dto) => {
                 info!("Post updated successfully");
                 Ok(Response::new(PostResponse {
@@ -365,7 +368,10 @@ impl<Repo: UserRepository + Send + Sync + 'static> Blog for BlogServiceImpl<Repo
         let uuid = Uuid::parse_str(&req.post_id)
             .map_err(|_| Status::invalid_argument("Invalid UUID format"))?;
 
-        match self.post_app.delete_post(uuid).await {
+        let user_id = Uuid::parse_str(&claims.sub)
+            .map_err(|_| Status::internal("Invalid user ID in token"))?;
+
+        match self.post_app.delete_post(uuid, user_id).await {
             Ok(_) => {
                 info!("Post deleted successfully");
                 Ok(Response::new(DeletePostResponse {
