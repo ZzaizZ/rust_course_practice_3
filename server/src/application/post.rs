@@ -1,5 +1,5 @@
 use crate::application::dto::post::{CreatePostDto, PostDto, UpdatePostDto};
-use crate::domain::entities::errors::DomainResult;
+use crate::domain::entities::errors::{DomainError, DomainResult};
 use crate::domain::entities::post::Post;
 use crate::domain::repositories::repo::UserRepository;
 use std::sync::Arc;
@@ -51,31 +51,38 @@ impl<Repo: UserRepository> PostApplication<Repo> {
     }
 
     #[instrument(skip(self, dto), fields(post_id = %dto.uuid, title = %dto.title))]
-    pub async fn update_post(&self, dto: UpdatePostDto) -> DomainResult<PostDto> {
+    pub async fn update_post(&self, dto: UpdatePostDto, user_id: Uuid) -> DomainResult<PostDto> {
         debug!("Updating post");
 
-        // Проверяем, существует ли пост
-        let existing_post = self.user_repository.get_post_by_id(dto.uuid).await?;
+        let mut existing_post = self.check_access_to_post(dto.uuid, user_id).await?;
 
-        let updated_post = Post {
-            uuid: dto.uuid,
-            title: dto.title,
-            content: dto.content,
-            author_id: existing_post.author_id,
-            created_at: existing_post.created_at,
-            updated_at: chrono::Utc::now(),
-        };
+        existing_post.title = dto.title;
+        existing_post.content = dto.content;
+        existing_post.updated_at = chrono::Utc::now();
 
-        let result = self.user_repository.update_post(updated_post).await?;
+        let result = self.user_repository.update_post(existing_post).await?;
         info!("Post updated successfully");
         Ok(PostDto::from_entity(result))
     }
 
     #[instrument(skip(self), fields(post_id = %post_id))]
-    pub async fn delete_post(&self, post_id: Uuid) -> DomainResult<()> {
+    pub async fn delete_post(&self, post_id: Uuid, user_id: Uuid) -> DomainResult<()> {
         debug!("Deleting post");
+
+        self.check_access_to_post(post_id, user_id).await?;
         self.user_repository.delete_post(post_id).await?;
         info!("Post deleted successfully");
         Ok(())
+    }
+
+    async fn check_access_to_post(&self, post_id: Uuid, user_id: Uuid) -> DomainResult<Post> {
+        let post = self.user_repository.get_post_by_id(post_id).await?;
+        if post.author_id != user_id {
+            debug!("User {} is not the author of post {}", user_id, post_id);
+            return Err(DomainError::Forbidden {
+                reason: "You can only access your own posts".to_string(),
+            });
+        }
+        Ok(post)
     }
 }

@@ -222,25 +222,13 @@ pub async fn update_post(
         ApiError::bad_request("Invalid UUID format".to_string())
     })?;
 
-    // Проверяем, что пользователь является автором поста
-    let existing_post = state.post_app.get_post_by_id(post_id).await?;
-    if existing_post.author_id != auth_user.user_id {
-        warn!(
-            "User {} attempted to update post {} owned by {}",
-            auth_user.user_id, post_id, existing_post.author_id
-        );
-        return Err(ApiError::forbidden(
-            "You can only update your own posts".to_string(),
-        ));
-    }
-
     let dto = UpdatePostDto {
         uuid: post_id,
         title: req.title.clone(),
         content: req.content.clone(),
     };
 
-    let post_dto = state.post_app.update_post(dto).await?;
+    let post_dto = state.post_app.update_post(dto, auth_user.user_id).await?;
     let response = PostResponse::from(post_dto);
 
     info!("Post updated successfully: {}", post_id);
@@ -272,19 +260,10 @@ pub async fn delete_post(
         ApiError::bad_request("Invalid UUID format".to_string())
     })?;
 
-    // Проверяем, что пользователь является автором поста
-    let existing_post = state.post_app.get_post_by_id(post_id).await?;
-    if existing_post.author_id != auth_user.user_id {
-        warn!(
-            "User {} attempted to delete post {} owned by {}",
-            auth_user.user_id, post_id, existing_post.author_id
-        );
-        return Err(ApiError::forbidden(
-            "You can only delete your own posts".to_string(),
-        ));
-    }
-
-    state.post_app.delete_post(post_id).await?;
+    state
+        .post_app
+        .delete_post(post_id, auth_user.user_id)
+        .await?;
 
     info!("Post deleted successfully: {}", post_id);
 
